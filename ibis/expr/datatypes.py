@@ -2026,3 +2026,4 @@ def same_kind_left_null(_: Null, b: DataType) -> bool:
 def same_kind_both_null(a: Null, b: Null) -> bool:
     """Return ``True``."""
     return True
+

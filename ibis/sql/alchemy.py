@@ -59,11 +59,11 @@ _ibis_type_to_sqla = {
     dt.Int64: sa.BigInteger,
     # Changed
     dt.CLOB: sa.CLOB,
-    dt.NCLOB: sa.NCLOB,
-    dt.LONG: sa.LONG,
-    dt.NUMBER: sa.NUMBER,
-    dt.BFILE: sa.BFILE,
-    dt.RAW: sa.RAW,
+    #dt.NCLOB: sa.NCLOB,
+    #dt.LONG: sa.LONG,
+    #dt.NUMBER: sa.NUMBER,
+    #dt.BFILE: sa.BFILE,
+    #dt.RAW: sa.RAW,
     dt.LONGRAW: sa.Binary,
 }
 
@@ -250,7 +250,7 @@ def sa_oracle_RAW(_, satype, nullable=True):
     return dt.RAW(nullable=nullable)
 
 
-@dt.dtype.register(OracleDialect, sa.dialects.oracle.Binary)
+@dt.dtype.register(OracleDialect, sa.types.BINARY)
 def sa_oracle_LONGRAW(_, satype, nullable=True):
     return dt.LONGRAW(nullable=nullable)
 
@@ -1692,3 +1692,4 @@ def _maybe_to_geodataframe(df, schema):
         if geom_col:
             df = geopandas.GeoDataFrame(df, geometry=geom_col)
     return df
+

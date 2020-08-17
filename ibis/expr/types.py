@@ -1055,15 +1055,15 @@ class LONGRAWColumn(BinaryColumn, LONGRAWValue):
 # -------------Number type------------------------------
 
 
-class NUMBERValue(NumericValue):
+class NumberValue(NumericValue):
     pass  # noqa: E701,E302
 
 
-class NUMBERScalar(NumericScalar, NUMBERValue):
+class NumberScalar(NumericScalar, NumberValue):
     pass  # noqa: E701,E302
 
 
-class NUMBERColumn(NumericColumn, NUMBERValue):
+class NumberColumn(NumericColumn, NumberValue):
     pass  # noqa: E701,E302
 
 
@@ -1358,3 +1358,4 @@ class UnnamedMarker:
 
 
 unnamed = UnnamedMarker()
+
