@@ -117,8 +117,8 @@ class OracleClient(alch.AlchemyClient):
     def list_databases(self):
         # http://dba.stackexchange.com/a/1304/58517
         return [
-            row.datname
-            for row in self.con.execute('select name from v$database;')
+            row.name
+            for row in self.con.execute('select name from v$database')
         ]
 
     def list_schemas(self):
@@ -200,4 +200,3 @@ class OracleClient(alch.AlchemyClient):
             replace=replace,
             name=name,
         )
-
