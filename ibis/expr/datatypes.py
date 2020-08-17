@@ -855,9 +855,9 @@ class LONGRAW(Binary):
     __slots__ = ()
 
 
-class NUMBER(DataType):
-    scalar = ir.NUMBERScalar
-    column = ir.NUMBERColumn
+class Number(DataType):
+    scalar = ir.NumberScalar
+    column = ir.NumberColumn
 
     __slots__ = 'precision', 'scale'
 
@@ -865,18 +865,18 @@ class NUMBER(DataType):
         self, precision: int, scale: int, nullable: bool = True
     ) -> None:
         if not isinstance(precision, numbers.Integral):
-            raise TypeError('Decimal type precision must be an integer')
+            raise TypeError('Number type precision must be an integer')
         if not isinstance(scale, numbers.Integral):
-            raise TypeError('Decimal type scale must be an integer')
+            raise TypeError('Number type scale must be an integer')
         if precision < 0:
-            raise ValueError('Decimal type precision cannot be negative')
+            raise ValueError('Number type precision cannot be negative')
         if not precision:
-            raise ValueError('Decimal type precision cannot be zero')
+            raise ValueError('Number type precision cannot be zero')
         if scale < 0:
-            raise ValueError('Decimal type scale cannot be negative')
+            raise ValueError('Number type scale cannot be negative')
         if precision < scale:
             raise ValueError(
-                'Decimal type precision must be greater than or equal to '
+                'Number type precision must be greater than or equal to '
                 'scale. Got precision={:d} and scale={:d}'.format(
                     precision, scale
                 )
@@ -892,8 +892,8 @@ class NUMBER(DataType):
         )
 
     @property
-    def largest(self) -> 'Decimal':
-        return NUMBER(38, self.scale)
+    def largest(self) -> 'Number':
+        return Number(38, self.scale)
 
 
 any = Any()
@@ -941,8 +941,6 @@ clob = CLOB()
 nclob = NCLOB()
 
 long = LONG()
-
-number = NUMBER()
 
 bfile = BFILE()
 
@@ -1104,6 +1102,7 @@ _TYPE_RULES = collections.OrderedDict(
                 'map',
                 'struct',
                 'interval',
+                'number',
             ),
             (
                 Tokens.DECIMAL,
@@ -1114,6 +1113,7 @@ _TYPE_RULES = collections.OrderedDict(
                 Tokens.MAP,
                 Tokens.STRUCT,
                 Tokens.INTERVAL,
+                Tokens.NUMBER,
             ),
         )
     ]
@@ -1524,7 +1524,21 @@ class TypeParser:
             return LONG()
 
         elif self._accept(Tokens.NUMBER):
-            return NUMBER()
+            if self._accept(Tokens.LPAREN):
+                self._expect(Tokens.INTEGER)
+                assert self.tok is not None
+                precision = self.tok.value
+
+                self._expect(Tokens.COMMA)
+
+                self._expect(Tokens.INTEGER)
+                scale = self.tok.value
+
+                self._expect(Tokens.RPAREN)
+            else:
+                precision = 9
+                scale = 0
+            return Number(precision, scale)
 
         elif self._accept(Tokens.BFILE):
             return BFILE()
@@ -1907,9 +1921,11 @@ def can_cast_longraw(source, target, **kwargs):
     return True
 
 
-@castable.register(NUMBER, NUMBER)
-def can_cast_number(source, target, **kwargs):
-    return True
+@castable.register(Number, Number)
+def can_cast_numbers(source: Number, target: Number, **kwargs) -> bool:
+    return (
+        target.precision >= source.precision and target.scale >= source.scale
+    )
 
 
 # geo spatial data type
