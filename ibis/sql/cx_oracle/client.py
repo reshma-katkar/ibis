@@ -6,7 +6,7 @@ from typing import Optional
 import sqlalchemy as sa
 
 import ibis.sql.alchemy as alch
-from ibis.sql.cx_oracle.compiler import OracleDialect
+from ibis.sql.oracle.compiler import OracleDialect
 from ibis.sql.postgres import udf
 
 import cx_Oracle  # NOQA fail early if the driver is missing
@@ -200,3 +200,4 @@ class OracleClient(alch.AlchemyClient):
             replace=replace,
             name=name,
         )
+
