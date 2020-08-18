@@ -42,7 +42,7 @@ class OracleClient(alch.AlchemyClient):
         user: str = getpass.getuser(),
         password: Optional[str] = None,
         # port: int = 1521,
-        database: str = None,
+        database: str = 'db202008111627_medium',
         url: Optional[str] = None,
         driver: str = 'cx_Oracle',
     ):
@@ -57,11 +57,7 @@ class OracleClient(alch.AlchemyClient):
         else:
             sa_url = sa.engine.url.make_url(url)
         super().__init__(sa.create_engine(sa_url))
-        self.database_name = database
-        self.uurl=sa_url
-        
-    def find_db(self):
-        return self.uurl
+        self.database_name = sa_url.database
 
     @contextlib.contextmanager
     def begin(self):
@@ -116,9 +112,11 @@ class OracleClient(alch.AlchemyClient):
     @property
     def current_database(self):
         """The name of the current database this client is connected to."""
+        print(sa_url)
         return self.database_name
 
-    def list_databases(self):
+    
+def list_databases(self):
         # http://dba.stackexchange.com/a/1304/58517
         return [
             row.name
