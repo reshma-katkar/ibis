@@ -6,8 +6,8 @@ from typing import Optional
 import sqlalchemy as sa
 
 import ibis.sql.alchemy as alch
-from ibis.sql.oracle.compiler import OracleDialect
-from ibis.sql.postgres import udf
+from ibis.sql.ibis_oracle.compiler import OracleDialect
+from ibis.sql.ibis_oracle.udf.api import udf
 
 import cx_Oracle  # NOQA fail early if the driver is missing
 
@@ -25,7 +25,7 @@ class OracleDatabase(alch.AlchemyDatabase):
 
 
 class OracleClient(alch.AlchemyClient):
-    """The Ibis PostgreSQL client class
+    """The Ibis Oracle client class
     Attributes
     ----------
     con : sqlalchemy.engine.Engine
@@ -34,7 +34,7 @@ class OracleClient(alch.AlchemyClient):
     dialect = OracleDialect
     database_class = OracleDatabase
     table_class = OracleTable
-    os.environ['TNS_ADMIN'] = '/home/reshma_katkar/adb_virt_env'
+    os.environ['TNS_ADMIN'] = '<Wallet_Path_Location>'
 
     def __init__(
         self,
@@ -42,7 +42,7 @@ class OracleClient(alch.AlchemyClient):
         user: str = getpass.getuser(),
         password: Optional[str] = None,
         # port: int = 1521,
-        database: str = 'db202008111627_medium',
+        database: str = None,
         url: Optional[str] = None,
         driver: str = 'cx_Oracle',
     ):
@@ -56,8 +56,12 @@ class OracleClient(alch.AlchemyClient):
             )
         else:
             sa_url = sa.engine.url.make_url(url)
-        super().__init__(sa.create_engine(sa_url))
-        self.database_name = sa_url.database
+        super().__init__(sa.create_engine(sa_url, max_identifier_length=128))
+        self.database_name = database
+        self.uurl = sa_url
+
+    def find_db(self):
+        return self.uurl
 
     @contextlib.contextmanager
     def begin(self):
@@ -79,7 +83,7 @@ class OracleClient(alch.AlchemyClient):
         Returns
         -------
         db : OracleDatabase
-            An :class:`ibis.sql.postgres.client.OracleDatabase` instance.
+            An :class:`ibis.sql.ibis_oracle.client.OracleDatabase` instance.
         Notes
         -----
         This creates a new connection if `name` is both not ``None`` and not
@@ -104,23 +108,19 @@ class OracleClient(alch.AlchemyClient):
         name : str
         Returns
         -------
-        schema : PostgreSQLSchema
-            An :class:`ibis.sql.postgres.client.PostgreSQLSchema` instance.
+        schema : OracleSchema
+            An :class:`ibis.sql.ibis_oracle.client.OracleSchema` instance.
         """
         return self.database().schema(name)
 
     @property
     def current_database(self):
         """The name of the current database this client is connected to."""
-        print(sa_url)
         return self.database_name
 
-    
-def list_databases(self):
-        # http://dba.stackexchange.com/a/1304/58517
+    def list_databases(self):
         return [
-            row.name
-            for row in self.con.execute('select name from v$database')
+            row.name for row in self.con.execute('select name from v$database')
         ]
 
     def list_schemas(self):
@@ -139,7 +139,7 @@ def list_databases(self):
 
     def table(self, name, database=None, schema=None):
         """Create a table expression that references a particular a table
-        called `name` in a PostgreSQL database called `database`.
+        called `name` in a Oracle database called `database`.
         Parameters
         ----------
         name : str
@@ -191,7 +191,7 @@ def list_databases(self):
         -------
         Callable
         Function that takes in ColumnExpr arguments and returns an instance
-        inheriting from PostgresUDFNode
+        inheriting from OracleUDFNode
         """
         return udf(
             client=self,
@@ -202,4 +202,3 @@ def list_databases(self):
             replace=replace,
             name=name,
         )
-

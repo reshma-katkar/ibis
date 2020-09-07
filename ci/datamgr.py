@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 import io
 import json
 import logging
@@ -13,6 +12,7 @@ import sqlalchemy as sa
 from plumbum import local
 from toolz import dissoc
 
+os.environ['TNS_ADMIN'] = '/home/dolly_lipare/adb_virt_env'
 SCRIPT_DIR = Path(__file__).parent.absolute()
 DATA_DIR_NAME = 'ibis-testing-data'
 DATA_DIR = Path(
@@ -474,6 +474,27 @@ def clickhouse(schema, tables, data_directory, **params):
             cols = df.select_dtypes([object]).columns
             df[cols] = df[cols].fillna('')
         insert(engine, table, df)
+
+
+# Oracle database connection
+@cli.command()
+@click.option('-h', '--host', default='host')
+@click.option('-P', '--port', default=1522, type=int)
+@click.option('-u', '--user', default='USER')
+@click.option('-p', '--password', default='PASSWORD')
+@click.option('-D', '--database', default='DATABASE')
+@click.option(
+    '-S',
+    '--schema',
+    type=click.File('rt'),
+    default=str(SCRIPT_DIR / 'schema' / 'oracle.sql'),
+)
+@click.option('-t', '--tables', multiple=True, default=TEST_TABLES)
+@click.option('-d', '--data-directory', default=DATA_DIR)
+def oracle(schema, tables, data_directory, **params):
+    data_directory = Path(data_directory)
+    engine = init_database('oracle+cx_oracle', params, schema)
+    insert_tables(engine, tables, data_directory)
 
 
 @cli.command()
