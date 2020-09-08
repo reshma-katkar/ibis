@@ -8,7 +8,6 @@ import sqlalchemy as sa
 import sqlalchemy.sql as sql
 from pkg_resources import parse_version
 from sqlalchemy.dialects.mysql.base import MySQLDialect
-from sqlalchemy.dialects.oracle.base import OracleDialect
 from sqlalchemy.dialects.postgresql.base import PGDialect as PostgreSQLDialect
 from sqlalchemy.dialects.sqlite.base import SQLiteDialect
 from sqlalchemy.engine.interfaces import Dialect as SQLAlchemyDialect
@@ -16,13 +15,14 @@ from sqlalchemy.engine.interfaces import Dialect as SQLAlchemyDialect
 import ibis
 import ibis.common.exceptions as com
 import ibis.expr.analysis as L
+
+# import ibis.sql.oracle.expr.datatypes as dts
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 import ibis.expr.schema as sch
 import ibis.expr.types as ir
 import ibis.expr.window as W
 import ibis.sql.compiler as comp
-import ibis.sql.oracle.expr.datatypes as dts
 import ibis.sql.transforms as transforms
 import ibis.util as util
 from ibis.client import Database, Query, SQLClient
@@ -59,13 +59,13 @@ _ibis_type_to_sqla = {
     dt.Int32: sa.Integer,
     dt.Int64: sa.BigInteger,
     # Changed
-    dts.CLOB: sa.CLOB,
+    # dts.CLOB: sa.CLOB,
     # dt.NCLOB: sa.NCLOB,
     # dt.LONG: sa.LONG,
     # dt.NUMBER: sa.NUMBER,
     # dt.BFILE: sa.BFILE,
     # dt.RAW: sa.RAW,
-    dts.LONGRAW: sa.Binary,
+    # dts.LONGRAW: sa.Binary,
 }
 
 
@@ -221,7 +221,7 @@ POSTGRES_FIELD_TO_IBIS_UNIT = {
 }
 
 
-@dt.dtype.register(OracleDialect, sa.dialects.oracle.CLOB)
+'''@dt.dtype.register(OracleDialect, sa.dialects.oracle.CLOB)
 def sa_oracle_CLOB(_, satype, nullable=True):
     return dts.CLOB(nullable=nullable)
 
@@ -243,17 +243,17 @@ def sa_oracle_NUMBER(_, satype, nullable=True):
 
 @dt.dtype.register(OracleDialect, sa.dialects.oracle.BFILE)
 def sa_oracle_BFILE(_, satype, nullable=True):
-    return dts.BFILE(nullable=nullable)
+    return dt.BFILE(nullable=nullable)
 
 
 @dt.dtype.register(OracleDialect, sa.dialects.oracle.RAW)
 def sa_oracle_RAW(_, satype, nullable=True):
-    return dts.RAW(nullable=nullable)
+    return dt.RAW(nullable=nullable)
 
 
 @dt.dtype.register(OracleDialect, sa.types.BINARY)
 def sa_oracle_LONGRAW(_, satype, nullable=True):
-    return dts.LONGRAW(nullable=nullable)
+    return dt.LONGRAW(nullable=nullable)'''
 
 
 '''-----------------------------------------------------------------'''
@@ -784,7 +784,7 @@ _operation_registry = {
     ops.Sqrt: unary(sa.func.sqrt),
     ops.Ceil: unary(sa.func.ceil),
     ops.Floor: unary(sa.func.floor),
-    ops.Power: fixed_arity(sa.func.power, 2),
+    ops.Power: fixed_arity(sa.func.pow, 2),
     ops.FloorDivide: _floor_divide,
 }
 
