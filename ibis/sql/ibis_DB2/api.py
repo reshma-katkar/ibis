@@ -1,10 +1,10 @@
+from ibis.sql.alchemy import to_sqlalchemy
 from ibis.sql.ibis_DB2.client import DB2Client
+from ibis.sql.ibis_DB2.compiler import dialect, rewrites  # noqa: F401
 
-# from ibis.sql.ibis_DB2.compiler import dialect, rewrites  # noqa: F401
 
-
-# def compile(expr, params=None):
-#     return to_sqlalchemy(expr, dialect.make_context(params=params))
+def compile(expr, params=None):
+    return to_sqlalchemy(expr, dialect.make_context(params=params))
 
 
 def connect(

@@ -1,9 +1,10 @@
-import ibm_db_sa as DB2Dialect
+import ibm_db_sa
 import sqlalchemy as sa
+from ibm_db_sa.base import DB2Dialect
 
 import ibis.expr.datatypes as dt11
 import ibis.sql.alchemy as s_al
-import ibis.sql.ibis_oracle.expr.datatypes as dt
+import ibis.sql.ibis_DB2.expr.datatypes as dt
 
 _ibis_type_to_sqla = {
     dt.CLOB: sa.CLOB,
@@ -47,41 +48,36 @@ class AlchemyDialect(s_al.AlchemyDialect):
     s_al.translator = AlchemyExprTranslator
 
 
-@dt.dtype.register(DB2Dialect, DB2Dialect.CLOB)
-def sa_oracle_CLOB(_, satype, nullable=True):
+@dt.dtype.register(DB2Dialect, ibm_db_sa.CLOB)
+def sa_db2_CLOB(_, satype, nullable=True):
     return dt.CLOB(nullable=nullable)
 
 
-@dt.dtype.register(DB2Dialect, DB2Dialect.BLOB)
-def sa_oracle_BLOB(_, satype, nullable=True):
+@dt.dtype.register(DB2Dialect, ibm_db_sa.BLOB)
+def sa_db2_BLOB(_, satype, nullable=True):
     return dt.BLOB(nullable=nullable)
 
 
-@dt.dtype.register(DB2Dialect, DB2Dialect.DBCLOB)
-def sa_oracle_DBCLOB(_, satype, nullable=True):
-    return dt.DBCLOB(nullable=nullable)
-
-
-@dt.dtype.register(DB2Dialect, DB2Dialect.GRAPHIC)
-def sa_oracle_GRAPHIC(_, satype, nullable=True):
+@dt.dtype.register(DB2Dialect, ibm_db_sa.GRAPHIC)
+def sa_db2_GRAPHIC(_, satype, nullable=True):
     return dt.GRAPHIC(nullable=nullable)
 
 
-@dt.dtype.register(DB2Dialect, DB2Dialect.VARGRAPHIC)
-def sa_oracle_VARGRAPHIC(_, satype, nullable=True):
+@dt.dtype.register(DB2Dialect, ibm_db_sa.VARGRAPHIC)
+def sa_db2_VARGRAPHIC(_, satype, nullable=True):
     return dt.VARGRAPHIC(nullable=nullable)
 
 
-@dt.dtype.register(DB2Dialect, DB2Dialect.SMALLINT)
-def sa_oracle_SMALLINT(_, satype, nullable=True):
+@dt.dtype.register(DB2Dialect, ibm_db_sa.SMALLINT)
+def sa_db2_SMALLINT(_, satype, nullable=True):
     return dt.SMALLINT(nullable=nullable)
 
 
-@dt.dtype.register(DB2Dialect, DB2Dialect.INTEGER)
-def sa_oracle_INTEGER(_, satype, nullable=True):
+@dt.dtype.register(DB2Dialect, ibm_db_sa.INTEGER)
+def sa_db2_INTEGER(_, satype, nullable=True):
     return dt.INTEGER(nullable=nullable)
 
 
-@dt.dtype.register(DB2Dialect, DB2Dialect.BIGINT)
-def sa_oracle_BIGINT(_, satype, nullable=True):
+@dt.dtype.register(DB2Dialect, ibm_db_sa.BIGINT)
+def sa_db2_BIGINT(_, satype, nullable=True):
     return dt.BIGINT(nullable=nullable)

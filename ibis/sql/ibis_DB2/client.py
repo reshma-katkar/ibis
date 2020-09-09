@@ -5,8 +5,8 @@ from typing import Optional
 import sqlalchemy as sa
 
 import ibis.sql.alchemy as alch
+from ibis.sql.ibis_DB2.compiler import DB2Dialect
 
-# from ibis.sql.ibis_oracle.compiler import OracleDialect
 # from ibis.sql.ibis_oracle.udf.api import udf
 
 import db2  # NOQA fail early if the driver is missing
@@ -31,7 +31,7 @@ class DB2Client(alch.AlchemyClient):
     con : sqlalchemy.engine.Engine
     """
 
-    # dialect = OracleDialect
+    dialect = DB2Dialect
     database_class = DB2Database
     table_class = DB2Table
     # os.environ['TNS_ADMIN'] = '/home/dolly_lipare/adb_virt_env'

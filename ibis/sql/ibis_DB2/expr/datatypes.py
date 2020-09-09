@@ -1,5 +1,4 @@
 import collections
-import re
 import typing
 
 from multipledispatch import Dispatcher
@@ -73,26 +72,25 @@ REAL = dt.Float32
 
 
 clob = CLOB()
-BLOB = BLOB()
-DBCLOB = DBCLOB()
-GRAPHIC = GRAPHIC()
-VARGRAPHIC = VARGRAPHIC()
-SMALLINT = SMALLINT()
-INTEGER = INTEGER()
-BIGINT = BIGINT()
+blob = BLOB()
+dbclob = DBCLOB()
+graphic = GRAPHIC()
+vargraphic = VARGRAPHIC()
+smallint = SMALLINT()
+integer = INTEGER()
+bigint = BIGINT()
 
 
 class Token_DB2(dt.Tokens):
     __slots__ = ()
     CLOB = 1
-    NCLOB = 2
-    LONG = 3
-    NUMBER = 4
-    BFILE = 5
-    RAW = 6
-    LONGRAW = 7
-    VARCHAR = 8
-    CHAR = 9
+    BLOB = 2
+    DBCLOB = 3
+    GRAPHIC = 4
+    VARGRAPHIC = 5
+    SMALLINT = 6
+    INTEGER = 7
+    BIGINT = 8
 
     @staticmethod
     def name(value):
@@ -101,7 +99,7 @@ class Token_DB2(dt.Tokens):
 
 _TYPE_RULES = collections.OrderedDict(
     [
-        # decimal + complex types
+        # complex types
         (
             '(?P<{}>{})'.format(token.upper(), token),
             typing.cast(
@@ -109,19 +107,32 @@ _TYPE_RULES = collections.OrderedDict(
             ),
         )
         for token, toktype in zip(
-            ('varchar', 'char', 'number', 'time',),
             (
-                Token_DB2.VARCHAR,
-                Token_DB2.CHAR,
-                Token_DB2.NUMBER,
-                Token_DB2.TIME,
+                'clob',
+                'blob',
+                'dbclob',
+                'graphic',
+                'vargraphic',
+                'smallint',
+                'integer',
+                'bigint',
+            ),
+            (
+                Token_DB2.CLOB,
+                Token_DB2.BLOB,
+                Token_DB2.DBCLOB,
+                Token_DB2.GRAPHIC,
+                Token_DB2.VARGRAPHIC,
+                Token_DB2.SMALLINT,
+                Token_DB2.INTEGER,
+                Token_DB2.BIGINT,
             ),
         )
     ]
 )
 _TYPE_RULES.update(dt._TYPE_RULES)
 _TYPE_KEYS = tuple(_TYPE_RULES.keys())
-_TYPE_PATTERN = re.compile('|'.join(_TYPE_KEYS), flags=re.IGNORECASE)
+# _TYPE_PATTERN = re.compile('|'.join(_TYPE_KEYS), flags=re.IGNORECASE)
 
 
 class TypeParser_Oracle(dt.TypeParser):
