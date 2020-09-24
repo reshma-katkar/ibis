@@ -1,3 +1,17 @@
+# Copyright 2020 Google Inc.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 import contextlib
 import getpass
 from typing import Optional
@@ -6,10 +20,6 @@ import sqlalchemy as sa
 
 import ibis.sql.alchemy as alch
 from ibis.sql.ibis_DB2.compiler import DB2Dialect
-
-# from ibis.sql.ibis_oracle.udf.api import udf
-
-import db2  # NOQA fail early if the driver is missing
 
 
 class DB2Table(alch.AlchemyTable):
@@ -34,7 +44,6 @@ class DB2Client(alch.AlchemyClient):
     dialect = DB2Dialect
     database_class = DB2Database
     table_class = DB2Table
-    # os.environ['TNS_ADMIN'] = '/home/dolly_lipare/adb_virt_env'
 
     def __init__(
         self,
@@ -87,8 +96,8 @@ class DB2Client(alch.AlchemyClient):
             the database named ``self.current_database``.
         Returns
         -------
-        db : OracleDatabase
-            An :class:`ibis.sql.ibis_DB2.client.OracleDatabase` instance.
+        db : DB2Database
+            An :class:`ibis.sql.ibis_DB2.client.DB2Database` instance.
         Notes
         -----
         This creates a new connection if `name` is both not ``None`` and not
@@ -118,7 +127,7 @@ class DB2Client(alch.AlchemyClient):
         Returns
         -------
         schema : DB2Schema
-            An :class:`ibis.sql.ibis_DB2.client.OracleSchema` instance.
+            An :class:`ibis.sql.ibis_DB2.client.DB2Schema` instance.
         """
         return self.database().schema(name)
 
@@ -129,8 +138,16 @@ class DB2Client(alch.AlchemyClient):
 
     def list_databases(self):
         return [
-            row.name for row in self.con.execute('LIST DATABASE DIRECTORY')
+            row.name
+            for row in self.con.execute(
+                """select distinct(db_name) as name from table \
+                        (mon_get_memory_pool('','',-2))"""
+            )
         ]
+
+    def count(self, name):
+        query = "select COUNT(*) as name from {name}".format(name=name)
+        return [row.name for row in self.con.execute(query)]
 
     def list_schemas(self):
         """List all the schemas in the current database."""

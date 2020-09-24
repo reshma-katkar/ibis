@@ -1,3 +1,17 @@
+# Copyright 2020 Google Inc.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 import ibm_db_sa
 import sqlalchemy as sa
 from ibm_db_sa.base import DB2Dialect
@@ -24,8 +38,6 @@ def _to_sqla_type(itype, type_map=None):
     elif isinstance(itype, dt11.Date):
         return sa.Date()
     elif isinstance(itype, dt11.Timestamp):
-        # SQLAlchemy DateTimes do not store the timezone, just whether the db
-        # supports timezones.
         return sa.TIMESTAMP(bool(itype.timezone))
     elif isinstance(itype, dt11.Array):
         ibis_type = itype.value_type

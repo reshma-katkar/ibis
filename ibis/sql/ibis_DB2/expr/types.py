@@ -1,121 +1,135 @@
+# Copyright 2020 Google Inc.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 import ibis.expr.types as tp
 
 
 class CLOBValue(tp.StringValue):
-    pass  # noqa: E701,E302
+    pass
 
 
 class CLOBScalar(tp.StringScalar, CLOBValue):
-    pass  # noqa: E701,E302
+    pass
 
 
 class CLOBColumn(tp.StringColumn, CLOBValue):
-    pass  # noqa: E701,E302
+    pass
 
 
 class BLOBValue(tp.StringValue):
-    pass  # noqa: E701,E302
+    pass
 
 
 class BLOBScalar(tp.StringScalar, BLOBValue):
-    pass  # noqa: E701,E302
+    pass
 
 
 class BLOBColumn(tp.StringColumn, BLOBValue):
-    pass  # noqa: E701,E302
+    pass
 
 
 class DBCLOBValue(tp.BinaryValue):
-    pass  # noqa: E701,E302
+    pass
 
 
 class DBCLOBScalar(tp.BinaryScalar, DBCLOBValue):
-    pass  # noqa: E701,E302
+    pass
 
 
 class DBCLOBColumn(tp.BinaryColumn, DBCLOBValue):
-    pass  # noqa: E701,E302
+    pass
 
 
 # --------------Graphic-----------------------------
 
 
 class GRAPHICValue(tp.StringValue):
-    pass  # noqa: E701,E302
+    pass
 
 
 class GRAPHICScalar(tp.StringScalar, GRAPHICValue):
-    pass  # noqa: E701,E302
+    pass
 
 
 class GRAPHICColumn(tp.StringColumn, GRAPHICValue):
-    pass  # noqa: E701,E302
+    pass
 
 
 # --------------Vargraphic-----------------------------
 
 
 class VARGRAPHICValue(tp.StringValue):
-    pass  # noqa: E701,E302
+    pass
 
 
 class VARGRAPHICScalar(tp.StringScalar, VARGRAPHICValue):
-    pass  # noqa: E701,E302
+    pass
 
 
 class VARGRAPHICColumn(tp.StringColumn, VARGRAPHICValue):
-    pass  # noqa: E701,E302
+    pass
 
 
 # ---------------Binary Integer----------------------------
 
 
 class SMALLINTValue(tp.NumericValue):
-    pass  # noqa: E701,E302
+    pass
 
 
 class SMALLINTScalar(tp.NumericScalar, SMALLINTValue):
-    pass  # noqa: E701,E302
+    pass
 
 
 class SMALLINTColumn(tp.NumericColumn, SMALLINTValue):
-    pass  # noqa: E701,E302
+    pass
 
 
 class INTEGERValue(tp.NumericValue):
-    pass  # noqa: E701,E302
+    pass
 
 
 class INTEGERScalar(tp.NumericScalar, INTEGERValue):
-    pass  # noqa: E701,E302
+    pass
 
 
 class INTEGERColumn(tp.NumericColumn, INTEGERValue):
-    pass  # noqa: E701,E302
+    pass
 
 
 class BIGINTValue(tp.NumericValue):
-    pass  # noqa: E701,E302
+    pass
 
 
 class BIGINTScalar(tp.NumericScalar, BIGINTValue):
-    pass  # noqa: E701,E302
+    pass
 
 
 class BIGINTColumn(tp.NumericColumn, BIGINTValue):
-    pass  # noqa: E701,E302
+    pass
 
 
 # -------------Floating points------------------------------
 
 
 class REALValue(tp.NumericValue):
-    pass  # noqa: E701,E302
+    pass
 
 
 class REALScalar(tp.NumericScalar, REALValue):
-    pass  # noqa: E701,E302
+    pass
 
 
 class REALColumn(tp.NumericColumn, REALValue):
-    pass  # noqa: E701,E302
+    pass

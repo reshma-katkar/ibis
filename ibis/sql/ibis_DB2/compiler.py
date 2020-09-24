@@ -1,3 +1,17 @@
+# Copyright 2020 Google Inc.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 import functools
 import itertools
 import locale
@@ -6,11 +20,9 @@ import re
 import string
 import warnings
 
-# import sqlalchemy.dialects.postgresql as pg
 import ibm_db_sa
 import sqlalchemy as sa
 from sqlalchemy.ext.compiler import compiles
-from sqlalchemy.sql import expression
 from sqlalchemy.sql.functions import GenericFunction
 
 import ibis
@@ -34,9 +46,9 @@ from ibis.sql.alchemy import (
 _operation_registry = alch._operation_registry.copy()
 _operation_registry.update(alch._window_functions)
 
-#
-# class PostgresUDFNode(ops.ValueOp):
-#     pass
+
+class DB2UDFNode(ops.ValueOp):
+    pass
 
 
 # TODO: substr and find are copied from SQLite, we should really have a
@@ -59,14 +71,13 @@ def _substr(t, expr):
 
 def _string_find(t, expr):
     arg, substr, start, _ = expr.op().args
-
     if start is not None:
         raise NotImplementedError
 
     sa_arg = t.translate(arg)
     sa_substr = t.translate(substr)
 
-    return sa.func.locate(sa_arg, sa_substr)
+    return sa.func.instr(sa_arg, sa_substr) - 1
 
 
 def _extract(fmt, output_type=sa.SMALLINT):
@@ -167,22 +178,6 @@ def _cast(t, expr):
     return sa.cast(sa_arg, sa_type)
 
 
-def _typeof(t, expr):
-    (arg,) = expr.op().args
-    sa_arg = t.translate(arg)
-    typ = sa.cast(sa.func.pg_typeof(sa_arg), sa.TEXT)
-
-    # select pg_typeof('asdf') returns unknown so we have to check the child's
-    # type for nullness
-    return sa.case(
-        [
-            ((typ == 'unknown') & (arg.type() != dt.null), 'text'),
-            ((typ == 'unknown') & (arg.type() == dt.null), 'null'),
-        ],
-        else_=typ,
-    )
-
-
 def _string_agg(t, expr):
     arg, sep, where = expr.op().args
     sa_arg = t.translate(arg)
@@ -200,7 +195,7 @@ _strftime_to_db2_rules = {
     '%A': 'TMDay',
     '%w': 'D',  # 1-based day of week, see below for how we make this 0-based
     '%d': 'DD',  # day of month
-    '%-d': 'FMDD',  # - is no leading zero for Python same for FM in postgres
+    '%-d': 'FMDD',
     '%b': 'TMMon',  # Sep
     '%B': 'TMMonth',  # September
     '%m': 'MM',  # 01
@@ -222,7 +217,6 @@ _strftime_to_db2_rules = {
     '%j': 'DDD',  # zero padded day of year
     '%-j': 'FMDDD',  # day of year
     '%U': 'WW',  # 1-based week of year
-    # 'W': ?,  # meh
 }
 
 try:
@@ -348,41 +342,6 @@ def _strftime(t, expr):
     return result
 
 
-class array_search(expression.FunctionElement):
-    type = sa.INTEGER()
-    name = 'array_search'
-
-
-@compiles(array_search)
-def db2_array_search(element, compiler, **kw):
-    needle, haystack = element.clauses
-    i = sa.func.generate_subscripts(haystack, 1).alias('i')
-    c0 = sa.column('i', type_=sa.INTEGER(), _selectable=i)
-    result = (
-        sa.func.coalesce(
-            sa.select([c0])
-            .where(haystack[c0].op('IS NOT DISTINCT FROM')(needle))
-            .order_by(c0)
-            .limit(1)
-            .as_scalar(),
-            0,
-        )
-        - 1
-    )
-    string_result = compiler.process(result, **kw)
-    return string_result
-
-
-'''def _find_in_set(t, expr):
-    # TODO: could make it even more generic by using generate_series
-    # TODO: this works with *any* type, not just strings. should the operation
-    #       itself also have this property?
-    needle, haystack = expr.op().args
-    return array_search(
-        t.translate(needle), pg.array(list(map(t.translate, haystack)))
-    )'''
-
-
 def _regex_replace(t, expr):
     string, pattern, replacement = map(t.translate, expr.op().args)
 
@@ -443,54 +402,6 @@ def _regex_extract(t, expr):
     return result
 
 
-def _cardinality(array):
-    return sa.case(
-        [(array.is_(None), None)],  # noqa: E711
-        else_=sa.func.coalesce(sa.func.array_length(array, 1), 0),
-    )
-
-
-'''def _array_repeat(t, expr):
-    """Is this really that useful?
-
-    Repeat an array like a Python list using modular arithmetic,
-    scalar subqueries, and PostgreSQL's ARRAY function.
-
-    This is inefficient if PostgreSQL allocates memory for the entire sequence
-    and the output column. A quick glance at PostgreSQL's C code shows the
-    sequence is evaluated stepwise, which suggests that it's roughly constant
-    memory for the sequence generation.
-    """
-    raw, times = map(t.translate, expr.op().args)
-
-    # SQLAlchemy uses our column's table in the FROM clause. We need a simpler
-    # expression to workaround this.
-    array = sa.column(raw.name, type_=raw.type)
-
-    # We still need to prefix the table name to the column name in the final
-    # query, so make sure the column knows its origin
-    array.table = raw.table
-
-    array_length = _cardinality(array)
-
-    # sequence from 1 to the total number of elements desired in steps of 1.
-    # the call to greatest isn't necessary, but it provides clearer intent
-    # rather than depending on the implicit postgres generate_series behavior
-    start = step = 1
-    stop = sa.func.greatest(times, 0) * array_length
-    series = sa.func.generate_series(start, stop, step).alias()
-    series_column = sa.column(series.name, type_=sa.INTEGER)
-
-    # if our current index modulo the array's length
-    # is a multiple of the array's length, then the index is the array's length
-    index_expression = series_column % array_length
-    index = sa.func.coalesce(sa.func.nullif(index_expression, 0), array_length)
-
-    # tie it all together in a scalar subquery and collapse that into an ARRAY
-    selected = sa.select([array[index]]).select_from(series)
-    return sa.func.array(selected.as_scalar())'''
-
-
 def _identical_to(t, expr):
     left, right = args = expr.op().args
     if left.equals(right):
@@ -539,7 +450,6 @@ def _round(t, expr):
     result = sa.func.round(sa.cast(sa_arg, sa.NUMERIC), t.translate(digits))
     if digits is not None and isinstance(arg.type(), dt.Decimal):
         return result
-    # CHnageddddddddddddddddd to ibm_db_sa.double
     result = sa.cast(result, ibm_db_sa.double)
     return result
 
@@ -553,28 +463,13 @@ def _mod(t, expr):
 
     result = left % right
     if expr.type().equals(dt.double):
-        # CHnageddddddddddddddddd to ibm_db_sa.double
         return sa.cast(result, ibm_db_sa.double)
     else:
         return result
 
 
-'''def _array_slice(t, expr):
-    arg, start, stop = expr.op().args
-    sa_arg = t.translate(arg)
-    sa_start = t.translate(start)
-
-    if stop is None:
-        sa_stop = _cardinality(sa_arg)
-    else:
-        sa_stop = t.translate(stop)
-    return sa_arg[sa_start + 1 : sa_stop]'''
-
-
 def _string_join(t, expr):
     sep, elements = expr.op().args
-    # changed
-    # return sa.func.concat_ws(t.translate(sep), *map(t.translate, elements))
     return sa.func.concat(*map(t.translate, elements))
 
 
@@ -587,7 +482,6 @@ def _literal(t, expr):
         return sa.text("INTERVAL '{} {}'".format(value, dtype.resolution))
     elif isinstance(dtype, dt.Set):
         return list(map(sa.literal, value))
-    # geo spatial data type
     elif isinstance(expr, ir.GeoSpatialScalar):
         # inline_metadata ex: 'SRID=4326;POINT( ... )'
         return sa.text(geo.translate_literal(expr, inline_metadata=True))
@@ -616,7 +510,6 @@ _operation_registry.update(
         ops.TableColumn: _table_column,
         # types
         ops.Cast: _cast,
-        ops.TypeOf: _typeof,
         # Floating
         ops.IsNan: _is_nan,
         ops.IsInf: _is_inf,
@@ -632,13 +525,11 @@ _operation_registry.update(
         ops.StringFind: _string_find,
         ops.GroupConcat: _string_agg,
         ops.Capitalize: unary(sa.func.initcap),
-        ops.RegexSearch: infix_op('~'),
+        ops.RegexSearch: fixed_arity(sa.func.REGEXP_INSTR, 2),
         ops.RegexReplace: _regex_replace,
         ops.Translate: fixed_arity('translate', 3),
         ops.RegexExtract: _regex_extract,
-        # ops.StringSplit: fixed_arity(sa.func.string_to_array, 2),
         ops.StringJoin: _string_join,
-        # ops.FindInSet: _find_in_set,
         # math
         ops.Log: _log,
         ops.Log2: unary(lambda x: sa.func.log(2, x)),
@@ -677,7 +568,6 @@ _operation_registry.update(
         ops.Variance: _variance_reduction('variance'),
         ops.StandardDev: _variance_reduction('stddev'),
         ops.RandomScalar: _random,
-        # now is in the timezone of the server, but we want UTC
         ops.TimestampNow: lambda *args: sa.func.timezone('UTC', sa.func.now()),
         ops.CumulativeAll: unary(sa.func.bool_and),
         ops.CumulativeAny: unary(sa.func.bool_or),
