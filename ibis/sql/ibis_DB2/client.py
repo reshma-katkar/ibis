@@ -18,7 +18,7 @@ from typing import Optional
 
 import sqlalchemy as sa
 
-import ibis.sql.alchemy as alch
+import ibis.sql.ibis_DB2.alchemy as alch
 from ibis.sql.ibis_DB2.compiler import DB2Dialect
 
 

@@ -109,7 +109,6 @@ def test_noop_cast(alltypes, at, translate, column):
 
 
 def test_timestamp_cast_noop(alltypes, at, translate):
-    # See GH #592
     result1 = alltypes.timestamp_col.cast('timestamp')
     result2 = alltypes.int_col.cast('timestamp')
 
@@ -194,18 +193,20 @@ def test_binary_arithmetic_2(con, func, left, right, expected):
     assert result == expected
 
 
-def test_nullifzero(alltypes):
+def test_nullifzero(alltypes, df):
     expr = alltypes.limit(100).int_col.nullifzero()
-    result = (expr.execute()).tolist()
-    expected = [91, 92, 93, 94, 95, 96]
-    assert result == expected
+    result = expr.execute()
+    expected = df.int_col.replace(to_replace=[0], value=[np.nan])
+    expected.name = 'tmp'
+    tm.assert_series_equal(result, expected)
 
 
 def test_string_length(alltypes, df):
     expr = alltypes.limit(100).string_col.length()
-    result = (expr.execute()).tolist()
-    expected = [3, 3, 3, 3, 3, 3]
-    assert result == expected
+    result = expr.execute()
+    expected = df.string_col.str.len().astype('int32')
+    expected.name = 'tmp'
+    tm.assert_series_equal(result, expected)
 
 
 @pytest.mark.parametrize(
@@ -442,6 +443,23 @@ def test_cumulative_ordered_window(alltypes, func, df):
     tm.assert_series_equal(result, expected)
 
 
+@pytest.mark.parametrize('func', ['sum', 'min', 'max'])
+def test_cumulative_partitioned_ordered_window(alltypes, func, df):
+    t = alltypes
+    df = df.sort_values(['string_col', 'timestamp_col']).reset_index(drop=True)
+    window = ibis.cumulative_window(
+        order_by=t.timestamp_col, group_by=t.string_col
+    )
+    f = getattr(t.double_col, func)
+    expr = t.projection([(t.double_col - f().over(window)).name('double_col')])
+    result = expr.execute().double_col
+    method = operator.methodcaller('cum{}'.format(func))
+    expected = df.groupby(df.string_col).double_col.transform(
+        lambda c: c - method(c)
+    )
+    tm.assert_series_equal(result, expected)
+
+
 def test_anonymous_aggregate(alltypes, df):
     t = alltypes
     expr = t[t.double_col > t.double_col.mean()]
@@ -508,6 +526,20 @@ def test_not_and_negate_bool(con, opname, df):
     expr = t.projection([op(t.MONTH).name('MONTH')])
     result = expr.execute().MONTH
     expected = op(df.head(10).MONTH)
+    tm.assert_series_equal(result, expected)
+
+
+@pytest.mark.parametrize('func', ['mean', 'sum', 'min', 'max'])
+def test_simple_window(alltypes, func, df):
+    t = alltypes
+    f = getattr(t.double_col, func)
+    df_f = getattr(df.double_col, func)
+    result = (
+        t.projection([(t.double_col - f()).name('double_col')])
+        .execute()
+        .double_col
+    )
+    expected = df.double_col - df_f()
     tm.assert_series_equal(result, expected)
 
 

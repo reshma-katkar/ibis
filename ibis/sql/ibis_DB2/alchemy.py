@@ -17,6 +17,7 @@ import sqlalchemy as sa
 from ibm_db_sa.base import DB2Dialect
 
 import ibis.expr.datatypes as dt11
+import ibis.expr.datatypes as dts
 import ibis.sql.alchemy as s_al
 import ibis.sql.ibis_DB2.expr.datatypes as dt
 
@@ -60,6 +61,22 @@ class AlchemyDialect(s_al.AlchemyDialect):
     s_al.translator = AlchemyExprTranslator
 
 
+class AlchemyTable(s_al.AlchemyTable):
+    pass
+
+
+class AlchemyDatabaseSchema(s_al.AlchemyDatabaseSchema):
+    pass
+
+
+class AlchemyDatabase(s_al.AlchemyDatabase):
+    pass
+
+
+class AlchemyClient(s_al.AlchemyClient):
+    pass
+
+
 @dt.dtype.register(DB2Dialect, ibm_db_sa.CLOB)
 def sa_db2_CLOB(_, satype, nullable=True):
     return dt.CLOB(nullable=nullable)
@@ -93,3 +110,13 @@ def sa_db2_INTEGER(_, satype, nullable=True):
 @dt.dtype.register(DB2Dialect, ibm_db_sa.BIGINT)
 def sa_db2_BIGINT(_, satype, nullable=True):
     return dt.BIGINT(nullable=nullable)
+
+
+@dts.dtype.register(DB2Dialect, ibm_db_sa.DOUBLE)
+def sa_db2_DOUBLE(_, satype, nullable=True):
+    return dts.Double(nullable=nullable)
+
+
+@dts.dtype.register(DB2Dialect, sa.types.Boolean)
+def sa_boolean(_, satype, nullable=True):
+    return dts.Boolean(nullable=nullable)
