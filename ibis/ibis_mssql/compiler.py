@@ -204,6 +204,11 @@ def _window(t, expr):
 
     window_op = arg.op()
 
+    if isinstance(window_op, (ops.Sum, ops.Mean, ops.Min, ops.Max)):
+        msg = """SQLServer backend doesn't support {}
+         operation with Window Function!"""
+        raise com.UnsupportedOperationError(msg.format(type(window_op)))
+
     _require_order_by = (
         ops.DenseRank,
         ops.MinRank,
@@ -431,16 +436,31 @@ _operation_registry.update(
 
 _unsupported_ops = [
     # standard operations
+    # ops.NotContains,
+    # ops.NullIf,
     ops.NotAny,
     # miscellaneous
     ops.Least,
     ops.Greatest,
+    # numeric
+    # ops.Round,
+    # ops.Log2,
+    # ops.Ln,
+    # ops.Log10,
+    # ops.Log,
+    # ops.Exp,
+    # ops.Modulus,
+    # string
+    # ops.Contains,
     ops.LPad,  # not supported by mssql
     ops.RPad,  # not supported by mssql
     ops.Capitalize,  # not supported by mssql
     ops.RegexSearch,  # not supported by mssql
     ops.RegexExtract,  # not supported by mssql
     ops.RegexReplace,  # not supported by mssql
+    # ops.StringAscii,
+    # ops.StringSQLLike,
+    # aggregate methods
     ops.CumulativeMax,
     ops.CumulativeMin,
     ops.CumulativeMean,
